@@ -1,6 +1,7 @@
 import axios from "axios";
 import Papa from "papaparse";
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import LoadingModal from "../components/LoadingModal";
 import useModal from "../components/useModal";
 import "../css/Recording.css";
@@ -23,6 +24,8 @@ const Recording = () => {
   const mediaStream = useRef(null);
   const mediaRecorder = useRef(null);
   const chunks = useRef([]);
+
+  const navigate = useNavigate();
 
   const startRecording = async () => {
     console.log("Starting recording...");
@@ -75,7 +78,7 @@ const Recording = () => {
     console.log("Preparing to upload audio...");
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("User is not authenticated!");
+      alert("Вы не авторизованы!");
       return;
     }
 
@@ -99,17 +102,17 @@ const Recording = () => {
       );
       console.log("Upload response:", response);
       if (response.status === 201) {
-        alert("Audio uploaded successfully!");
+        alert("Аудио успешно загружено!");
         setRecordedPhrases((prevSet) => new Set(prevSet).add(wordList[wordIndex]));
       } else {
-        alert(`Error uploading audio: ${response.statusText}`);
+        alert(`Ошибка загрузки аудио: ${response.statusText}`);
       }
     } catch (error) {
       console.error(
         "Upload error:",
         error.response ? error.response.data : error.message
       );
-      alert("Error uploading audio!");
+      alert("Ошибка загрузки аудио!");
     }
   };
 
@@ -173,7 +176,7 @@ const Recording = () => {
     const fetchRecordedPhrases = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("User is not authenticated!");
+        alert("Вы не авторизованы!");
         return;
       }
 
@@ -194,7 +197,8 @@ const Recording = () => {
           "Error fetching recorded phrases:",
           error.response ? error.response.data : error.message
         );
-        alert("Error fetching recorded phrases!");
+        alert("Пожалуйста авторизуйтесь!");
+        navigate.push("/main"); // Redirect to the main page on error
       }
     };
 
