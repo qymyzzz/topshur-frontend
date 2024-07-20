@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Route, Routes, Link, Navigate, useLocation } from "react-router-dom";
-import Recording from "./pages/Recording";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Intro from "./pages/Intro";
-import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+import Recording from "./pages/Recording";
 // import Test from "./pages/Test";
-import Test from "./pages/Test";
 import "./App.css";
+import Test from "./pages/Test";
 
 
 function App() {

@@ -2,7 +2,6 @@ import axios from "axios";
 import Papa from "papaparse";
 import React, { useEffect, useRef, useState } from "react";
 import LoadingModal from "../components/LoadingModal";
-import Modal from "../components/Modal";
 import useModal from "../components/useModal";
 import "../css/Recording.css";
 
@@ -15,11 +14,12 @@ const Recording = () => {
 
   const [wordList, setWordList] = useState([]);
   const [wordIndex, setWordIndex] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false); // To track if data is loaded
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordedUrl, setRecordedUrl] = useState("");
   const [recordedBlob, setRecordedBlob] = useState(null);
+  const [recordedPhrases, setRecordedPhrases] = useState(new Set());
   const mediaStream = useRef(null);
   const mediaRecorder = useRef(null);
   const chunks = useRef([]);
@@ -100,6 +100,7 @@ const Recording = () => {
       console.log("Upload response:", response);
       if (response.status === 201) {
         alert("Audio uploaded successfully!");
+        setRecordedPhrases((prevSet) => new Set(prevSet).add(wordList[wordIndex]));
       } else {
         alert(`Error uploading audio: ${response.statusText}`);
       }
@@ -138,7 +139,7 @@ const Recording = () => {
             });
             console.log("Results data:", results.data);
             setWordList(wordArray);
-            setIsLoaded(true); // Mark data as loaded
+            setIsLoaded(true);
             console.log("Loaded word list:", wordArray);
           },
           error: (error) => {
@@ -166,6 +167,38 @@ const Recording = () => {
     }
 
     modalEnterFullScreen.showModal();
+  }, []);
+
+  useEffect(() => {
+    const fetchRecordedPhrases = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("User is not authenticated!");
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          "https://topshur-backend.onrender.com/get-audios",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const recordedPhrasesSet = new Set(response.data.transcripts);
+        setRecordedPhrases(recordedPhrasesSet);
+        console.log("Fetched recorded phrases:", recordedPhrasesSet);
+      } catch (error) {
+        console.error(
+          "Error fetching recorded phrases:",
+          error.response ? error.response.data : error.message
+        );
+        alert("Error fetching recorded phrases!");
+      }
+    };
+
+    fetchRecordedPhrases();
   }, []);
 
   useEffect(() => {
@@ -212,37 +245,32 @@ const Recording = () => {
 
   return (
     <div className="content">
+      {recordedPhrases.has(wordList[wordIndex]) && (
+        <div className="recorded-notice">
+          <p>Аудиозапись уже записана. Нажмите "Перезаписать", чтобы записать заново.</p>
+        </div>
+      )}
       <div className="word">
         <h1 className="displayedWord">
           {wordList.length > 0 ? wordList[wordIndex] : "Loading..."}
         </h1>
       </div>
       <div className="btnsRec">
-  <div className="buttons">
-    <button className="btnRec" onClick={leftArrowAction}>
-      {"<"}
-    </button>
-    <button className="btnRec" onClick={handleRecording}>
-      {isRecording ? "Stop" : "Start"}
-    </button>
-    <button className="btnRec" onClick={rightArrowAction}>
-      {">"}
-    </button>
-  </div>
-  <div className="audio-control">
-    <audio controls src={recordedUrl} />
-  </div>
-</div>
-
-      {modalEnterFullScreen.isModalVisible && (
-        <Modal
-          message={`Пожалуйста войдите в полноэкранный режим для корректной работы приложения.\nВыполнить вход в полноэкранный режим?`}
-          onClose={modalEnterFullScreen.hideModal}
-          onConfirm={switchFullscreen}
-          confirmText={"Войти"}
-          cancelText={"Отмена"}
-        />
-      )}
+        <div className="buttons">
+          <button className="btnRec" onClick={leftArrowAction}>
+            {"<"}
+          </button>
+          <button className="btnRec" onClick={handleRecording}>
+            {isRecording ? "Стоп" : recordedPhrases.has(wordList[wordIndex]) ? "Перезаписать" : "Начать запись"}
+          </button>
+          <button className="btnRec" onClick={rightArrowAction}>
+            {">"}
+          </button>
+        </div>
+        <div className="audio-control">
+          <audio controls src={recordedUrl} />
+        </div>
+      </div>
       {loadingModal.isModalVisible && (
         <LoadingModal message="Загружаем запись, пожалуйста подождите." />
       )}
